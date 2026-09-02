@@ -12,7 +12,8 @@ jobs:
       - name: 下载 build_manifest.json (来自阿里云OSS)
         id: get_manifest
         run: |
-          wget --tries=3 --retry-connrefused "${{ env.MANIFEST_URL }}" -O manifest.json
+          wget --user-agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+            --tries=3 --retry-connrefused "${{ env.MANIFEST_URL }}" -O manifest.json
           cat manifest.json
 
       - name: 解析manifest获取参数
@@ -29,11 +30,13 @@ jobs:
 
       - name: 下载AAB包（OSS传输加速域名）
         run: |
-          wget --tries=3 --retry-connrefused "${{ env.AAB_URL }}" -O app-release.aab
+          wget --user-agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+            --tries=3 --retry-connrefused "${{ env.AAB_URL }}" -O app-release.aab
 
       - name: 下载mapping混淆表
         run: |
-          wget --tries=3 --retry-connrefused "${{ env.MAPPING_URL }}" -O mapping.txt
+          wget --user-agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+            --tries=3 --retry-connrefused "${{ env.MAPPING_URL }}" -O mapping.txt
 
       - name: 写入Google Play服务账号json文件
         run: |
