@@ -2,6 +2,7 @@ name: Publish To Google Play Internal
 on:
   workflow_dispatch:
   repository_dispatch:
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -13,6 +14,7 @@ jobs:
         run: |
           curl -L --retry 3 --retry-connrefused "${{ env.MANIFEST_URL }}" -o manifest.json
           cat manifest.json
+
       - name: 解析manifest获取参数
         id: parse
         run: |
@@ -25,9 +27,10 @@ jobs:
           echo "MAPPING_URL=$MAPPING_URL" >> $GITHUB_ENV
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
 
-      - name: 下载AAB包
+      - name: 下载AAB包（OSS传输加速域名）
         run: |
           curl -L --retry 3 --retry-connrefused "${{ env.AAB_URL }}" -o app-release.aab
+
       - name: 下载mapping混淆表
         run: |
           curl -L --retry 3 --retry-connrefused "${{ env.MAPPING_URL }}" -o mapping.txt
@@ -40,6 +43,12 @@ jobs:
         run: |
           sudo gem install fastlane
 
-      # 只做密钥校验，绝对不会上传包
-      - name: ===仅校验密钥，不上传任何包===
-        run: fastlane run validate_play_store_json_key json_key:service-account-key.json
+      - name: Fastlane‑supply上传到Google Play【internal内测轨道】
+        run: |
+          fastlane supply \
+            --json_key service-account-key.json \
+            --package_name ${{ env.PACKAGE_NAME }} \
+            --aab ./app-release.aab \
+            --track internal \
+            --mapping ./mapping.txt \
+            --version_code ${{ env.VERSION_CODE }}
