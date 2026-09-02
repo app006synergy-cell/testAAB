@@ -1,1 +1,56 @@
+name: Publish To Google Play Internal
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      manifest_url:
+        required: true
+        type: string
 
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 下载 build_manifest.json (来自阿里云OSS)
+        id: get_manifest
+        run: |
+          wget --tries=3 --retry-connrefused ${{ inputs.manifest_url }} -O manifest.json
+          cat manifest.json
+
+      - name: 解析manifest获取参数
+        id: parse
+        run: |
+          PACKAGE_NAME=$(jq -r '.[0].package_name' manifest.json)
+          AAB_URL=$(jq -r '.[0].aab_url' manifest.json)
+          MAPPING_URL=$(jq -r '.[0].mapping_url' manifest.json)
+          VERSION_CODE=$(jq -r '.[0].version_code' manifest.json)
+          echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
+          echo "AAB_URL=$AAB_URL" >> $GITHUB_ENV
+          echo "MAPPING_URL=$MAPPING_URL" >> $GITHUB_ENV
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+
+      - name: 下载AAB包（OSS传输加速域名）
+        run: |
+          wget --tries=3 --retry-connrefused "${{ env.AAB_URL }}" -O app-release.aab
+
+      - name: 下载mapping混淆表
+        run: |
+          wget --tries=3 --retry-connrefused "${{ env.MAPPING_URL }}" -O mapping.txt
+
+      - name: 写入Google Play服务账号json文件
+        run: |
+          echo '${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}' > service-account-key.json
+
+      - name: 安装fastlane
+        run: |
+          sudo gem install fastlane
+
+      - name: Fastlane‑supply上传到Google Play【internal内测轨道】
+        run: |
+          fastlane supply \
+            --json_key service-account-key.json \
+            --package_name ${{ env.PACKAGE_NAME }} \
+            --aab ./app-release.aab \
+            --track internal \
+            --mapping ./mapping.txt \
+            --version_code ${{ env.VERSION_CODE }}
